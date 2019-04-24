@@ -1,0 +1,8 @@
+- hosts: tools-02
+  gather_facts: no
+  tasks:
+    - name: Copy a file
+      win_copy:
+          src: files/test.txt
+          dest: 'c:\temp\test.txt'
+          remote_dest: yes

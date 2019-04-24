@@ -1,0 +1,4 @@
+zabbix_home: c:\zabbix
+zabbix_conf: zabbix_agentd.win.conf
+zabbix_agent: Zabbix Agent
+

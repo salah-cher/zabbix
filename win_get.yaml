@@ -1,0 +1,7 @@
+- hosts: tools-01
+  gather_facts: no
+  tasks:
+  - name: Download earthrise.jpg to specified path only if modified
+    win_get_url:
+      url: https://en.wikipedia.org/wiki/Computer_file#/media/File:PunchCardDecks.agr.jpg
+      dest: C:\Users\tools.user\earthrise.jpg

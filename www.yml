@@ -1,0 +1,9 @@
+- hosts: win
+  pre_tasks:
+     - debug:
+         msg: "Beginning to copy zabbix to {{ inventory_hostname }}..."
+  roles:
+    - zabbix
+  post_tasks:
+     - debug:
+         msg: "Done copying zabbix to {{ inventory_hostname }}..."

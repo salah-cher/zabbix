@@ -1,0 +1,7 @@
+- hosts: tools-01
+  gather_facts: no
+  tasks:
+  - name: Copy a file
+    win_copy:
+        src: files/test.txt
+        dest: /cygdrive/c/Temp/

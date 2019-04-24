@@ -1,0 +1,66 @@
+- name: Create Zabbix bin 
+  win_file:
+    path: '{{ zabbix_home }}\bin'
+    state: directory
+
+- name: Copy a file
+  win_copy:
+    src: '{{ role_path }}/files/agent/bin'
+    dest: '{{ zabbix_home }}'
+    remote_dest: yes
+
+- name: Create Zabbix conf
+  win_file:
+    path: '{{ zabbix_home }}\conf'
+    state: directory
+
+- name: Create the Zabbix agent configuration file 
+  template:
+    src: '{{ role_path }}/files/agent/conf/{{ zabbix_conf }}'
+    dest: '{{ zabbix_home }}\conf\{{ zabbix_conf }}'
+
+- name: Run PowerShell to enable Credssp
+  win_shell: |
+    $file = "$env:temp\ConfigureRemotingForAnsible.ps1"; 
+    (New-Object -TypeName System.Net.WebClient).DownloadFile("https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1", $file); 
+    powershell.exe -ExecutionPolicy ByPass -File $file -EnableCredSSP -DisableBasicAuth; 
+    Get-ChildItem -Path WSMan:\localhost\Listener | Where-Object { $_.Keys -contains "Transport=HTTP" } | Remove-Item -Recurse -Force
+
+- name: Run PowerShell to open port 10050 
+  win_shell: |
+    $r = Get-NetFirewallRule -DisplayName 'Zabbix Agent' 2> $null
+    if (-NOT $r) { New-NetFirewallRule -DisplayName "Zabbix Agent" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 10050 -Profile Domain,Private }
+
+- name: Check the status of Windows Firewall
+  win_service:
+    name: Windows Firewall
+  register: result
+
+- name: Restart Windows Firewall service
+  win_service:
+    name: Windows Firewall
+    state: restarted
+  when: result.state is defined or result.name is defined
+
+- name: Check the status of Zabbix agent
+  win_service:
+    name: '{{ zabbix_agent }}'
+  register: result
+ 
+- name: Set up Zabbix agent
+  win_shell: 'zabbix_agentd.exe --config {{ zabbix_home }}\conf\{{ zabbix_conf }} --install'
+  args:
+    chdir: '{{ zabbix_home }}\bin'
+    executable: cmd
+  when: result.state is not defined or result.name is not defined
+
+#- name: Install Zabbix agent
+#  win_nssm:
+#    name: '{{ zabbix_agent }}'
+#    application: '{{ zabbix_home }}\bin\zabbix_agentd.exe'
+#    app_parameters: --config {{ zabbix_home }}\conf\{{ zabbix_conf }}; --install 
+
+- name: Start Zabbix agent service
+  win_service:
+    name: '{{ zabbix_agent }}'
+    state: started
